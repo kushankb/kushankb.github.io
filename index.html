@@ -1,1 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kushank Bajaj - Data Scientist & Sustainability Researcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: #f8fafc;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero Header Section with Background - Separate Wrapper */
+        .hero-wrapper {
+            position: relative;
+            height: 50vh;
+            min-height: 300px;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('assets/images/background1_ai.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .hero-header {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-header h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 100%;
+        }
+
+        .hero-header .subtitle {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* About Section - Separate Wrapper */
+        .about-wrapper {
+            background: white;
+            width: 100%;
+            padding: 2rem 0;
+        }
+
+        .about-section {
+            background: white;
+            padding: 2.8rem 0;
+            margin: 0;
+        }
+
+        .about-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .about-section h2 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            color: #1a202c;
+            text-align: center;
+        }
+
+        .bio {
+            font-size: 1.1rem;
+            color: #4a5568;
+            line-height: 1.8;
+            text-align: left;
+        }
+
+        .bio p {
+            margin-bottom: 2rem;
+        }
+
+        /* Navigation - Separate Wrapper */
+        .nav-wrapper {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 0;
+            padding: 2rem 0;
+            flex-wrap: wrap;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .nav a {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav a:hover, .nav a.active {
+            background: #4299e1;
+            color: white;
+        }
+
+        /* Projects Section - Separate Wrapper */
+        .projects-wrapper {
+            background: #f8fafc;
+            width: 100%;
+            padding: 4rem 0;
+        }
+
+        #projects {
+            margin-bottom: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 2rem;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            height: 240px;
+            width: 100%;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .project-image {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .project-content {
+            padding: 1rem 1.5rem;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1;
+        }
+
+        .project-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #1a202c;
+            line-height: 1.2;
+        }
+
+        .project-category {
+            font-size: 0.8rem;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 1200px;
+            margin: 2rem auto;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .modal-top {
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 4rem;
+            height: 350px;
+            border-radius: 12px 12px 0 0;
+            width: 100%;
+        }
+
+        .modal-bottom {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        .modal-content-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .modal-links-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1a202c;
+        }
+
+        .modal-description {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #4a5568;
+            margin-bottom: 0;
+        }
+
+        .modal-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0;
+        }
+
+        .modal-links h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1a202c;
+        }
+
+        .modal-link {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            transition: color 0.3s ease;
+        }
+
+        .modal-link:hover {
+            color: #3182ce;
+            text-decoration: underline;
+        }
+
+        .modal-link:last-child {
+            border-bottom: none;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .close-modal:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-gif {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-image-container video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Contact Section - Separate Wrapper */
+        .contact-wrapper {
+            background: white;
+            width: 100%;
+        }
+
+        .contact {
+            text-align: center;
+            padding: 4rem 0;
+            margin-top: 0;
+            border-top: 1px solid #e2e8f0;
+            position: relative;
+            z-index: 1;
+            clear: both;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .contact-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-link {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .contact-link:hover {
+            border-color: #4299e1;
+            color: #4299e1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-header .subtitle {
+                font-size: 1.2rem;
+                letter-spacing: 2px;
+            }
+
+            .about-content {
+                padding: 0 1rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+                padding: 0 1rem;
+            }
+
+            .modal {
+                padding: 1rem;
+            }
+
+            .modal-content {
+                margin: 1rem auto;
+                min-height: auto;
+            }
+
+            .modal-top {
+                height: 250px;
+                border-radius: 12px 12px 0 0;
+            }
+
+            .modal-bottom {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Header Wrapper with Background Image -->
+    <div class="hero-wrapper">
+        <header class="hero-header">
+            <div class="hero-content">
+                <h1>Data for People & Planet</h1>
+                <p class="subtitle">KUSHANK BAJAJ</p>
+            </div>
+        </header>
+    </div>
+
+    <!-- About Section Wrapper -->
+    <div class="about-wrapper">
+        <section class="about-section">
+            <div class="about-content">
+                <h2>About</h2>
+                <div class="bio">
+                    <p>I'm a Data Scientist with the United Nations Food and Agriculture Organisation and completed my PhD in Resources, Environment, and Sustainability at the University of British Columbia in 2024. My work focuses on using data science to connect diverse spatial and non-spatial datasets to address sustainability challenges and assess systemic risks.</p>
+
+                    <p>At the heart of my work is a commitment to making research and data more accessible, actionable, and relevant to those who need it most. I'm especially drawn to projects that are people- and policy-centered, and I believe that meaningful solutions to complex social problems emerge through collaboration, trust, and transdisciplinary thinking.</p>
+
+                    <p>I care deeply about bridging the gap between research and practice. That means going beyond academic papers and technical reports to find ways of communicating insights that resonate—with policymakers, communities, and anyone trying to build a more just and sustainable world.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Navigation Wrapper -->
+    <div class="nav-wrapper">
+        <nav class="nav">
+            <a href="#projects" class="active">Projects</a>
+        </nav>
+    </div>
+
+    <!-- Projects Wrapper -->
+    <div class="projects-wrapper">
+        <div class="container">
+            <!-- Projects Grid -->
+            <section id="projects">
+                <div class="projects-grid">
+                    <!-- Project 1 - Canada Food Flows -->
+                    <div class="project-card" onclick="openModal('project1')">
+                        <div class="project-image">
+                            <img src="assets/animations/food-cicle-icon.gif" alt="Canada Food Flows" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Canada Food Flows</h3>
+                            <p class="project-category">Where do your fruits and vegetables really come from?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 - Global Digital Food Twin -->
+                    <div class="project-card" onclick="openModal('project2')">
+                        <div class="project-image">
+                            <img src="assets/animations/global-food-twin.gif" alt="Global Digital Food Twin" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Global Digital Food Twin</h3>
+                            <p class="project-category">A digital twin of the world’s food system.</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 3 - Food Flow Impact Tool -->
+                    <div class="project-card" onclick="openModal('project3')">
+                        <div class="project-image">
+                            <img src="assets/images/GlobalImpactTool.png" alt="Food Flow Impact Tool" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Food Flow Impact Tool</h3>
+                            <p class="project-category">What happens if a major food-producing region goes offline?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 4 - Canada Food Supply Climate -->
+                    <div class="project-card" onclick="openModal('project7')">
+                        <div class="project-image">
+                            <img src="assets/images/heatstress_map.png" alt="Canada Food Supply Climate" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Canada's Food Supply and Climate Change</h3>
+                            <p class="project-category">How climate-resilient is Canada’s fruit and vegetable supply?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 5 - Climate Change and Food Prices -->
+                    <div class="project-card" onclick="openModal('project4')">
+                        <div class="project-image">
+                            <img src="assets/images/produce.png" alt="Climate Change and Food Prices" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Climate Change and Food Prices</h3>
+                            <p class="project-category">Can extreme weather abroad raise your grocery bill?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 6 - Future Climate Exposure -->
+                    <div class="project-card" onclick="openModal('project5')">
+                        <div class="project-image">
+                            <img src="assets/images/climate-exposure-map.png" alt="Future Climate Exposure" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Future Climate Exposure over Agricultural Lands</h3>
+                            <p class="project-category">What will climate extremes mean for global food production?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 7 - Smallholders -->
+                    <div class="project-card" onclick="openModal('project6')">
+                        <div class="project-image">
+                            <img src="assets/images/smallholder.png" alt="Smallholder Weather Exposure" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Smallholders & Future Weather Extreme Exposure</h3>
+                            <p class="project-category">Will climate extremes hit small farms harder?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 8 - Placeholder -->
+                    <div class="project-card" onclick="openModal('project8')">
+                        <div class="project-image">
+                            <img src="assets/images/cerealtrade.png" alt="Global Cereal Trade and Climate Change" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Global Cereal Trade & Climate Change Impacts</h3>
+                            <p class="project-category">Can global trade help buffer climate shocks in food systems?</p>
+                        </div>
+                    </div>
+
+                    <!-- Project 9 - Placeholder -->
+                    <div class="project-card" onclick="openModal('project9')">
+                        <div class="project-image">
+                            <img src="assets/images/drought_farmer.png" alt="Land-use Change & Droughts" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                        </div>
+                        <div class="project-content">
+                            <h3 class="project-title">Land-use Change & Droughts</h3>
+                            <p class="project-category">Is rainfall the only driver of droughts?</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Contact Wrapper -->
+    <div class="contact-wrapper">
+        <section class="contact" id="contact">
+            <h2>Get In Touch</h2>
+            <p>Interested in collaboration or have questions about my work?</p>
+            <div class="contact-links">
+                <a href="mailto:bajajkushank@gmail.com" class="contact-link">Email</a>
+                <a href="https://www.linkedin.com/in/kushank-bajaj-536a8350" class="contact-link">LinkedIn</a>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="projectModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <div class="modal-top" id="modalImage">
+                🌍
+            </div>
+            <div class="modal-bottom">
+                <div class="modal-content-section">
+                    <h2 class="modal-title" id="modalTitle">Project Title</h2>
+                    <p class="modal-description" id="modalDescription">Project description will go here...</p>
+                </div>
+                <div class="modal-links-section">
+                    <h3>Learn More</h3>
+                    <div class="modal-links" id="modalLinks">
+                        <!-- Links will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Project data
+        const projects = {
+            project1: {
+                title: "Canada Food Flows",
+                video: "assets/videos/canada-food-flow.mp4",
+                description: "Where do your fruits and vegetables really come from? We developed the data and an interactive tool to help Canadians reconnect with the story of their food. The data and tool maps the distant regions that supply produce to Canadian tables, highlighting dependencies on international trade and impact on national food security.",
+                links: [
+                    { text: "Interactive Tool", url: "https://canadafoodflows.ca/" },
+                    { text: "UBC Media Coverage", url: "https://beyond.ubc.ca/what-produce-does-canada-import-how-the-us-mexico-and-other-countries-supply-the-canadian-market/" },
+                    { text: "CBC Feature", url: "https://www.cbc.ca/player/play/video/9.6630920" },
+                    { text: "Global News", url: "https://globalnews.ca/news/11080859/canadian-bananas-grow-local-tariffs/" },
+                    { text: "Bloomberg Coverage", url: "https://www.bloomberg.com/news/newsletters/2025-02-07/global-food-roundup-trade-war-threatens-flows-and-prices" },
+                    { text: "Financial Post", url: "https://financialpost.com/commodities/agriculture/trump-tariffs-us-canada-food-supply-chain-chaos" },
+                    { text: "Vancouver Sun", url: "https://vancouversun.com/news/new-research-shows-bc-dependence-us-produce" },
+                    { text: "CBC BC Video", url: "https://www.youtube.com/watch?v=Ewz_A_mnYUA" }
+                ]
+            },
+            project2: {
+                title: "Global Digital Food Twin",
+                gif: "assets/animations/global-food-twin.gif",
+                description: "A digital twin of the world’s food system. In collaboration with Earth Genome and Better Planet Laboratory, I helped develop the transportation and flow datasets powering the Global Food Twin—a powerful platform that simulates global food systems. It reveals regional interdependencies, trade dynamics, and agricultural patterns at both global and local levels. The tool supports researchers, policymakers, and organizations in designing more resilient and equitable food systems.",
+                links: [
+                    { text: "Interactive Tool", url: "https://foodtwin.theplotline.org/" },
+                    { text: "Medium Article", url: "https://medium.com/earthrisemedia/global-food-twin-modeling-the-worlds-food-system-43800412bfcd" },
+                    { text: "Earth Genome", url: "https://earthgenome.org/" },
+                    { text: "Better Planet Lab", url: "https://betterplanetlab.com/" }
+                ]
+            },
+            project3: {
+                title: "Food Flow Impact Tool",
+                video: "assets/videos/Untitled.mov",
+                description: "Ever wondered how losing major breadbaskets would impact global food flows? As part of the Global Food Twin project, this interactive tool allows users to simulate the removal of any subnational region from the global food network. Instantly visualize how this disruption ripples through international food flows and affects food access in specific countries. It offers intuitive, evidence-based insight into food system vulnerabilities and the global population’s reliance on key production zones.",
+                links: [
+                    { text: "Interactive Tool", url: "https://kushankb-foodflowimpacttool.hf.space/" },
+                    { text: "Learn more about Global Food Twin", url: "https://medium.com/earthrisemedia/global-food-twin-modeling-the-worlds-food-system-43800412bfcd" }
+                ]
+            },
+            project4: {
+                title: "Climate Change and Food Prices",
+                image: "assets/images/hilltimes.png",
+                video: "",
+                description: "Can extreme weather abroad raise your grocery bill? We quantified how weather shocks across global food supply chains influence domestic food prices. This research reveals that climate events in faraway regions can ripple through trade networks to affect household food costs. The results underscore the importance of integrating systemic climate risks into economic and food security planning.",
+                links: [
+                    { text: "Hill Times Op-ed", url: "https://www.hilltimes.com/story/2024/03/18/climate-change-will-affect-your-grocery-prices/414501/" },
+                    { text: "CBC BC Video", url: "https://www.youtube.com/watch?v=Ewz_A_mnYUA" },
+                    { text: "CBC News (French)", url: "https://ici.radio-canada.ca/info/long-format/2140576/local-canada-tarifs-climat-epicerie" },
+                    { text: "Paper upcoming" },
+                ]
+            },
+            project5: {
+                title: "Future Climate Exposure over Agricultural Lands",
+                image: "assets/images/climate-exposure-map.png",
+                video: "",
+                description: "What will climate extremes mean for global food production? Using future climate scenarios, we assessed how agricultural lands will be affected by rising temperatures. In a world 2°C warmer, 25% of today’s agricultural land will face over two months of extreme heat annually—up from 16%. Exposure to multiple climate extremes will also increase significantly. These insights are critical for informing global adaptation and food system resilience strategies.",
+                links: [
+                     { text: "Paper upcoming" }]
+            },
+            project6: {
+                title: "Smallholders and Future Weather Extreme Exposure",
+                image: "assets/images/smallholder-exposure-chart1.png",
+                video: "",
+                description: "Will climate extremes hit regions with smaller farms harder? This research maps the differential exposure of small versus large farms to future weather extremes using the latest multi-model climate projections. We find that smaller and medium farms are often more vulnerable, raising urgent policy implications for equitable climate adaptation and food security. The findings inform targeted resilience strategies for protecting the most at-risk producers.",
+                links: [
+                    { text: "Paper upcoming"}]
+            },
+            project7: {
+                title: "Canada's Food Supply and Climate Change",
+                image: "assets/images/Picture1.png",
+                description: "How climate-resilient is Canada’s fruit and vegetable supply? This project assesses the vulnerability of Canada’s produce system to future weather extremes. By combining novel food supply chain data with high-resolution climate model outputs, we identify critical climate risks facing fruit and vegetable production and import pathways. The findings offer actionable insights to support supply chain resilience and long-term food security planning.",
+                links: [
+                    { text: "Paper Pre-print", url: "https://essopenarchive.org/doi/full/10.22541/essoar.175087325.57474154/v1"}
+                ]
+            },
+            project8: {
+                title: "Global Cereal Trade & Climate Change Impacts",
+                image: "assets/images/trade_results2.png",
+                description: "How can global trade help buffer climate shocks in food systems? We developed a simple, adaptable, and reproducible framework that allows countries to evaluate cross-border climate impacts on their food systems. Our findings show that existing global cereal trade networks already help mitigate future climate impacts—particularly benefiting lower-income nations.",
+                links: [
+                 {text: "Paper", url: "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0314722" }
+                 ]
+            },
+            project9: {
+                title: "Land-use Change & Droughts",
+                image: "assets/images/drought_poster.png",
+                description: "Is rainfall the only driver of droughts? In India, drought declarations and disaster relief funding are primarily based on rainfall deficits. But in semi-arid regions—especially those with high farmer suicide rates—our research reveals a more complex story. By integrating Earth observation, weather and climate data, and agricultural statistics, we show how land-use practices significantly shape the severity and impact of droughts. This interdisciplinary analysis challenges traditional drought metrics and highlights the importance of sustainable land management in building resilience.",
+                links: [
+                {text: "Poster", url: "https://drive.google.com/file/d/1mxelOyhuS6EQ0oijtv8YYPCRgidLuuef/view?usp=sharing" }
+                ]
+            }
+        };
+
+        function openModal(projectId) {
+            const project = projects[projectId];
+            if (!project) return;
+
+            document.getElementById('modalTitle').textContent = project.title;
+            document.getElementById('modalDescription').textContent = project.description;
+
+            // Handle video, gif, image, or emoji
+            const modalImage = document.getElementById('modalImage');
+            if (project.video) {
+                modalImage.innerHTML = `
+                    <div class="modal-image-container">
+                        <video controls autoplay muted loop>
+                            <source src="${project.video}" type="video/mp4">
+                            <source src="${project.video}" type="video/quicktime">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>`;
+            } else if (project.gif) {
+                modalImage.innerHTML = `<div class="modal-image-container"><img src="${project.gif}" alt="${project.title}"></div>`;
+            } else if (project.image && project.image.includes('.')) {
+                modalImage.innerHTML = `<div class="modal-image-container"><img src="${project.image}" alt="${project.title}"></div>`;
+            } else {
+                modalImage.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 4rem;">${project.image}</div>`;
+            }
+
+            const linksContainer = document.getElementById('modalLinks');
+            linksContainer.innerHTML = '';
+            project.links.forEach(link => {
+                const linkElement = document.createElement('a');
+                linkElement.href = link.url;
+                linkElement.textContent = link.text;
+                linkElement.className = 'modal-link';
+                linkElement.target = '_blank';
+                linksContainer.appendChild(linkElement);
+            });
+
+            document.getElementById('projectModal').style.display = 'block';
+        }
+
+        function closeModal(event) {
+            if (!event || event.target === document.getElementById('projectModal')) {
+                document.getElementById('projectModal').style.display = 'none';
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
