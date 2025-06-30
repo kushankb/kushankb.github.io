@@ -87,8 +87,9 @@
 
         .about-section {
             background: white;
-            padding: 2.8rem 0;
+            padding: 2rem 0;
             margin: 0;
+            margin-bottom: 0;
         }
 
         .about-content {
@@ -97,13 +98,6 @@
             padding: 0 2rem;
         }
 
-        .about-section h2 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            margin-bottom: 3rem;
-            color: #1a202c;
-            text-align: center;
-        }
 
         .bio {
             font-size: 1.1rem;
@@ -155,9 +149,19 @@
         .projects-wrapper {
             background: #f8fafc;
             width: 100%;
-            padding: 4rem 0;
+            padding: 2rem 0;
+        }
+        #projects h2 {
+            margin-bottom: 0.5rem;
         }
 
+        .about-section h2 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 1.25rem;
+            color: #1a202c;
+            text-align: center;
+        }
         #projects {
             margin-bottom: 0;
             position: relative;
@@ -168,7 +172,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            margin-top: 2rem;
+            margin-top: 1rem;
             margin-bottom: 2rem;
             width: 100%;
             position: relative;
@@ -414,8 +418,11 @@
 
         .contact {
             text-align: center;
-            padding: 4rem 0;
-            margin-top: 0;
+            height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             border-top: 1px solid #e2e8f0;
             position: relative;
             z-index: 1;
@@ -423,6 +430,16 @@
             max-width: 1400px;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        .contact h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact p {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
         }
 
         .contact-links {
@@ -529,11 +546,20 @@
         </section>
     </div>
 
-    <!-- Navigation Wrapper -->
-    <div class="nav-wrapper">
-        <nav class="nav">
-            <a href="#projects" class="active">Projects</a>
-        </nav>
+<!--    &lt;!&ndash; Navigation Wrapper &ndash;&gt;-->
+<!--    <div class="nav-wrapper">-->
+<!--        <nav class="nav">-->
+<!--            <a href="#projects" class="active">Projects</a>-->
+<!--        </nav>-->
+<!--    </div>-->
+
+        <!-- Projects Heading -->
+    <div class="about-wrapper">
+        <section class="about-section">
+            <div class="about-content">
+                <h2>Projects</h2>
+            </div>
+        </section>
     </div>
 
     <!-- Projects Wrapper -->
@@ -654,6 +680,7 @@
                 <a href="mailto:bajajkushank@gmail.com" class="contact-link">Email</a>
                 <a href="https://www.linkedin.com/in/kushank-bajaj-536a8350" class="contact-link">LinkedIn</a>
             </div>
+            <p style="margin-top: 2rem; font-size: 0.9rem; color: #718096;">© Kushank Bajaj 2025</p>
         </section>
     </div>
 
