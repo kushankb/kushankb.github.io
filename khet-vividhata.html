@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Khet Vividhata — Interactive Prototype</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #FAFAF6; }
+  #root { height: 100%; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+
+
+const C = {
+  earth: "#2D5016", earthLight: "#3A6B1E", earthPale: "#E8F0E0",
+  gold: "#C8952E", goldLight: "#F5E6C4",
+  warm: "#FAFAF6", ink: "#1A1A1A", muted: "#6B7280",
+  danger: "#C05621", dangerBg: "#FEF3E8",
+  ok: "#16803C", okBg: "#E6F6EC",
+  blue: "#1D6FA5", blueBg: "#E8F2FA",
+  border: "#E2E0D8", card: "#FFFFFF",
+};
+
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:${C.warm};color:${C.ink};-webkit-font-smoothing:antialiased}
+.sf{font-family:'DM Serif Display',serif}
+@keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes si{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.au{animation:fu .5s ease both}.af{animation:fi .4s ease both}.as{animation:si .4s ease both}.ap{animation:pop .35s ease both}
+`;
+
+// ---- CROP DATA ----
+// yield = max attainable yield (qtl/acre) at score 100
+// score = GAEZ suitability for THIS location (0-100)
+// actual yield = yield * score/100
+const CROPS = {
+  chickpea: { name: "Chickpea (Chana)", season: "rabi", score: 87, fit: "Bahut upyukt", fitEn: "Excellent fit", color: C.ok, priceSwing: 2, msp: "Low", price: 5200, maxYield: 12.6, input: 18500, water: 3800, nfix: 1800, soil: 1200, fert: 2200, mapHue: 130 },
+  mustard: { name: "Mustard (Sarson)", season: "rabi", score: 79, fit: "Upyukt", fitEn: "Good fit", color: C.ok, priceSwing: 2, msp: "Medium", price: 5600, maxYield: 10.1, input: 16200, water: 3200, nfix: 0, soil: 800, fert: 1600, mapHue: 80 },
+  lentil: { name: "Lentil (Masoor)", season: "rabi", score: 74, fit: "Upyukt", fitEn: "Good fit", color: C.ok, priceSwing: 2, msp: "Low", price: 4800, maxYield: 12.2, input: 15800, water: 3600, nfix: 1500, soil: 1100, fert: 2000, mapHue: 110 },
+  maize: { name: "Maize (Makka)", season: "kharif", score: 72, fit: "Upyukt", fitEn: "Good fit", color: "#7C8B2D", priceSwing: 1, msp: "Medium", price: 2200, maxYield: 44.4, input: 21000, water: 2800, nfix: 0, soil: 600, fert: 1200, mapHue: 95 },
+  moong: { name: "Mung bean (Moong)", season: "kharif", score: 68, fit: "Theek hai", fitEn: "Moderate fit", color: C.gold, priceSwing: 3, msp: "Low", price: 7800, maxYield: 7.4, input: 14200, water: 4200, nfix: 2200, soil: 1500, fert: 2600, mapHue: 50 },
+  soybean: { name: "Soybean", season: "kharif", score: 54, fit: "Theek hai", fitEn: "Moderate fit", color: C.gold, priceSwing: 2, msp: "Medium", price: 4600, maxYield: 18.5, input: 17800, water: 2400, nfix: 1600, soil: 900, fert: 1800, mapHue: 60 },
+  cotton: { name: "Cotton (Kapas)", season: "kharif", score: 41, fit: "Mushkil", fitEn: "Risky here", color: C.danger, priceSwing: 3, msp: "Medium", price: 6600, maxYield: 19.5, input: 24500, water: 1200, nfix: 0, soil: 400, fert: 800, mapHue: 30 },
+};
+
+const BASE = { trueNet: 41200 };
+
+// Suitability-adjusted yield
+function adjYield(crop) { return Math.round(crop.maxYield * crop.score / 100 * 10) / 10; }
+
+function calc(rk, kk, yr) {
+  const r = CROPS[rk], k = CROPS[kk];
+  const rY = adjYield(r), kY = adjYield(k);
+  const rRev = Math.round(r.price * rY), kRev = Math.round(k.price * kY);
+  const conv = rRev + kRev - r.input - k.input;
+  const m = 1 + (yr - 1) * .12;
+  const ben = Math.round((r.water + k.water + r.nfix + k.nfix + r.soil + k.soil + r.fert + k.fert) * m);
+  return { conv: Math.round(conv), ben, net: Math.round(conv + ben), rRev, kRev, rIn: r.input, kIn: k.input, rY, kY };
+}
+
+const SCR = [
+  { id: "splash", label: "Home" },
+  { id: "profile", label: "Farm setup" },
+  { id: "dash", label: "Overview" },
+  { id: "compare", label: "Economics" },
+  { id: "map", label: "Crop fit map" },
+  { id: "prices", label: "Price safety" },
+  { id: "builder", label: "Build rotation" },
+  { id: "myplan", label: "My plan" },
+  { id: "data", label: "Data sources" },
+];
+
+// ---- shared components ----
+function SwingDots({ level }) {
+  const cols = [C.ok, C.gold, C.danger];
+  const labs = ["Steady prices", "Some movement", "Moves a lot"];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      {[1, 2, 3].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: 4, background: i <= level ? cols[level - 1] : C.border }} />)}
+      <span style={{ fontSize: 11, color: cols[level - 1], fontWeight: 500, marginLeft: 2 }}>{labs[level - 1]}</span>
+    </div>
+  );
+}
+function MspBadge({ level }) {
+  const m = { High: { bg: C.okBg, c: C.ok, t: "Strong MSP safety" }, Medium: { bg: C.blueBg, c: C.blue, t: "Some MSP support" }, Low: { bg: C.dangerBg, c: C.danger, t: "Weak MSP safety" } };
+  const s = m[level]; return <span style={{ padding: "2px 8px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: s.bg, color: s.c }}>{s.t}</span>;
+}
+function SuitBadge({ score }) {
+  const bg = score >= 75 ? C.okBg : score >= 55 ? C.goldLight : C.dangerBg;
+  const c = score >= 75 ? C.ok : score >= 55 ? "#8B5A1B" : C.danger;
+  const pct = Math.round(score);
+  return <span style={{ padding: "2px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: bg, color: c }}>{pct}% fit</span>;
+}
+
+// =================== SPLASH ===================
+function Splash({ onNext }) {
+  return (
+    <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "40px 24px", background: `linear-gradient(170deg, ${C.earth} 0%, #1A3A0B 100%)`, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 80%, rgba(200,149,46,.15) 0%, transparent 60%)" }} />
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div className="au" style={{ fontSize: 14, letterSpacing: 3, color: C.gold, textTransform: "uppercase", marginBottom: 20, fontWeight: 600 }}>Crop diversification platform</div>
+        <h1 className="sf au" style={{ fontSize: 52, color: "#fff", lineHeight: 1.1, animationDelay: ".1s", marginBottom: 8 }}>Khet Vividhata</h1>
+        <div className="au" style={{ animationDelay: ".15s", fontSize: 15, color: "rgba(255,255,255,.55)" }}>खेत विविधता</div>
+        <p className="au" style={{ animationDelay: ".2s", fontSize: 18, color: "rgba(255,255,255,.8)", maxWidth: 360, margin: "20px auto 0", lineHeight: 1.6 }}>See the <em>true cost</em> of wheat-rice and discover what earns more for your land</p>
+        <div className="au" style={{ animationDelay: ".35s", marginTop: 36, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          {["Which crop fits your soil", "Real mandi prices", "Hidden costs revealed", "Water & soil savings"].map((t, i) => (
+            <span key={i} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500, background: "rgba(255,255,255,.1)", color: "rgba(255,255,255,.75)", border: "1px solid rgba(255,255,255,.12)" }}>{t}</span>
+          ))}
+        </div>
+        <button onClick={onNext} className="au" style={{ animationDelay: ".45s", marginTop: 40, padding: "14px 36px", borderRadius: 28, background: C.gold, color: "#fff", fontWeight: 600, fontSize: 15, border: "none", cursor: "pointer", boxShadow: "0 4px 20px rgba(200,149,46,.3)" }}>Explore →</button>
+      </div>
+    </div>
+  );
+}
+
+// =================== PROFILE ===================
+function Profile() {
+  const [step, setStep] = useState(0);
+  const [fid, setFid] = useState("");
+  const [fetched, setFetched] = useState(false);
+  const fields = [
+    { label: "District", value: "Sangrur, Punjab", icon: "📍" },
+    { label: "Farm size", value: "5 acres (2 hectare)", icon: "🌾" },
+    { label: "Current crops", value: "Wheat (Rabi) + Rice (Kharif)", icon: "🌿" },
+    { label: "Irrigation", value: "Tubewell (submersible)", icon: "💧" },
+    { label: "Soil Health Card", value: "Auto-linked via AgriStack", icon: "🧪" },
+    { label: "Nearest mandi", value: "Sangrur APMC (8 km)", icon: "🏪" },
+  ];
+  const doFetch = () => { if (fid.length >= 6) { setFetched(true); } };
+  useEffect(() => { if (fetched) { const t = setInterval(() => setStep(s => s < fields.length ? s + 1 : s), 400); return () => clearInterval(t); } }, [fetched]);
+  return (
+    <div style={{ padding: "28px 20px" }}>
+      <h2 className="sf" style={{ fontSize: 26, marginBottom: 4, color: C.earth }}>Kisan ki Pehchaan</h2>
+      <p style={{ fontSize: 14, color: C.muted, marginBottom: 20, lineHeight: 1.5 }}>Enter your Farmer ID to pull your details from AgriStack.</p>
+      <div style={{ marginBottom: 20, padding: 18, borderRadius: 16, background: C.card, border: fetched ? `2px solid ${C.ok}` : `2px solid ${C.gold}`, transition: "all .3s" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 18, background: fetched ? C.okBg : C.goldLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{fetched ? "✓" : "🪪"}</div>
+          <div>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Farmer ID (Kisan Pehchaan)</div>
+            <div style={{ fontSize: 12, color: C.muted }}>From AgriStack / Digital Agriculture Mission</div>
+          </div>
+        </div>
+        {!fetched ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input type="text" placeholder="e.g. FID-PB-SGR-084172" value={fid} onChange={e => setFid(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: "inherit", background: C.warm, outline: "none" }} />
+            <button onClick={doFetch} disabled={fid.length < 6} style={{ padding: "12px 20px", borderRadius: 10, border: "none", background: fid.length >= 6 ? C.earth : C.border, color: "#fff", fontWeight: 600, fontSize: 14, cursor: fid.length >= 6 ? "pointer" : "default", fontFamily: "inherit" }}>Fetch</button>
+          </div>
+        ) : (
+          <div className="ap" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.ok, letterSpacing: 1 }}>{fid || "FID-PB-SGR-084172"}</div>
+            <span style={{ padding: "3px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: C.okBg, color: C.ok, textTransform: "uppercase" }}>Verified</span>
+          </div>
+        )}
+      </div>
+      {fetched && <div className="af">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <div style={{ height: 1, flex: 1, background: C.border }} />
+          <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5 }}>Auto-filled from AgriStack</span>
+          <div style={{ height: 1, flex: 1, background: C.border }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {fields.map((f, i) => (
+            <div key={i} className={i < step ? "as" : ""} style={{ opacity: i < step ? 1 : .2, transition: "opacity .3s", display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderRadius: 12, background: i < step ? C.card : "transparent", border: `1px solid ${i < step ? C.border : "transparent"}` }}>
+              <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{f.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>{f.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, marginTop: 1 }}>{f.value}</div>
+              </div>
+              {i < step && <span style={{ color: C.ok, fontSize: 16 }}>✓</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: C.blueBg, fontSize: 13, color: C.blue }}>
+          <strong>Soil report linked:</strong> pH 7.8 · Organic carbon 0.42% · Nitrogen low · Potash high
+        </div>
+      </div>}
+      {!fetched && <div style={{ padding: "14px 16px", borderRadius: 10, background: C.warm, border: `1px dashed ${C.border}`, fontSize: 13, color: C.muted, lineHeight: 1.6 }}><strong>No Farmer ID yet?</strong> Enter details manually. Over 8 crore IDs already created under Digital Agriculture Mission.</div>}
+    </div>
+  );
+}
+
+// =================== DASHBOARD ===================
+function Dash() {
+  const [show, setShow] = useState(false);
+  useEffect(() => { setTimeout(() => setShow(true), 600); }, []);
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div><div style={{ fontSize: 13, color: C.muted }}>Harpreet's farm · Sangrur</div><h2 className="sf" style={{ fontSize: 24, color: C.earth }}>Aapki kheti ka hisaab</h2></div>
+        <div style={{ width: 40, height: 40, borderRadius: 20, background: C.earthPale, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.earth }}>H</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+        <div className="au" style={{ padding: 16, borderRadius: 14, background: C.card, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>You earn now</div>
+          <div className="sf" style={{ fontSize: 28, marginTop: 4 }}>₹52,400</div>
+          <div style={{ fontSize: 12, color: C.muted }}>/acre/year · wheat-rice</div>
+        </div>
+        <div className="au" style={{ animationDelay: ".1s", padding: 16, borderRadius: 14, background: C.dangerBg, border: `1px solid rgba(192,86,33,.15)` }}>
+          <div style={{ fontSize: 11, color: C.danger, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Hidden loss</div>
+          <div className="sf" style={{ fontSize: 28, color: C.danger, marginTop: 4 }}>−₹11,200</div>
+          <div style={{ fontSize: 12, color: C.danger, opacity: .7 }}>/acre/year you don't see</div>
+        </div>
+      </div>
+      <div className="au" style={{ animationDelay: ".2s", padding: 18, borderRadius: 14, background: `linear-gradient(135deg, ${C.earth}, ${C.earthLight})`, color: "#fff", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5, opacity: .7, marginBottom: 8 }}>Best for your soil (87% fit)</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 14, opacity: .8 }}>Wheat + Chickpea rotation</div>
+            <div className="sf" style={{ fontSize: 32, marginTop: 2 }}>₹58,900</div>
+            <div style={{ fontSize: 13, opacity: .7 }}>/acre/year (all benefits counted)</div>
+          </div>
+          <div style={{ textAlign: "center", padding: "10px 16px", background: "rgba(255,255,255,.15)", borderRadius: 12 }}>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>+₹6,500</div>
+            <div style={{ fontSize: 11, opacity: .75 }}>more/acre</div>
+          </div>
+        </div>
+      </div>
+      {show && <div className="af">
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Where your money goes (wheat-rice)</div>
+        {[{ l: "💧 Water table dropping", v: "₹4,200" }, { l: "🪱 Soil getting weaker", v: "₹2,100" }, { l: "⬆ Fertilizer need rising", v: "₹2,400" }, { l: "🔥 Stubble burning health", v: "₹2,500" }].map((x, i) => (
+          <div key={i} className="as" style={{ animationDelay: `${i * .08}s`, display: "flex", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: C.card, border: `1px solid ${C.border}`, marginBottom: 8 }}>
+            <span style={{ fontSize: 13 }}>{x.l}</span><span style={{ fontSize: 13, fontWeight: 600, color: C.danger }}>−{x.v}/yr</span>
+          </div>
+        ))}
+      </div>}
+      <div className="au" style={{ animationDelay: ".4s", marginTop: 8, padding: "14px 16px", borderRadius: 12, background: C.okBg, border: `1px solid rgba(22,128,60,.12)`, display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ width: 38, height: 38, borderRadius: 19, background: C.ok, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>G</div>
+        <div><div style={{ fontSize: 13, fontWeight: 600, color: C.ok }}>Gurpreet, Nabha (15 km from you)</div><div style={{ fontSize: 12, color: C.muted }}>Switched 2 acres to chickpea · earned ₹12,000 more last rabi</div></div>
+      </div>
+    </div>
+  );
+}
+
+// =================== COMPARE ===================
+function Compare() {
+  const [yr, setYr] = useState(1);
+  const d = { 1: { wr: 52400, alt: 48200, wrT: 41200, altT: 50800 }, 2: { wr: 53100, alt: 51600, wrT: 41500, altT: 55200 }, 3: { wr: 53800, alt: 54900, wrT: 41100, altT: 59400 }, 5: { wr: 55200, alt: 58900, wrT: 39800, altT: 65100 } }[yr];
+  const mx = 70000;
+  const bar = (v, col) => ({ width: `${(v / mx) * 100}%`, height: 22, borderRadius: 6, background: col, transition: "width .4s" });
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <h2 className="sf" style={{ fontSize: 24, color: C.earth, marginBottom: 4 }}>Kamai ka comparison</h2>
+      <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>Wheat-rice vs. our best recommendation for your soil</p>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {[1, 2, 3, 5].map(y => <button key={y} onClick={() => setYr(y)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `1.5px solid ${y === yr ? C.earth : C.border}`, background: y === yr ? C.earthPale : "transparent", color: y === yr ? C.earth : C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Year {y}</button>)}
+      </div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>What most farmers see</div>
+        {[["Wheat + Rice", d.wr, "#94A3B8"], ["Wheat + Chickpea", d.alt, C.gold]].map(([l, v, c]) => (
+          <div key={l} style={{ marginBottom: 10 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>{l}</span><span style={{ fontWeight: 600 }}>₹{v.toLocaleString()}</span></div><div style={bar(v, c)} /></div>
+        ))}
+      </div>
+      <div style={{ padding: 18, borderRadius: 14, background: C.card, border: `2px solid ${C.earth}` }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.earth, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>Full picture (Khet Vividhata shows you)</div>
+        {[["Wheat + Rice", d.wrT, C.danger, "with hidden costs"], ["Wheat + Chickpea", d.altT, C.ok, "with soil & water benefits"]].map(([l, v, c, s]) => (
+          <div key={l} style={{ marginBottom: 10 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>{l} <span style={{ fontSize: 11, color: c }}>({s})</span></span><span style={{ fontWeight: 600, color: c }}>₹{v.toLocaleString()}</span></div><div style={bar(v, c)} /></div>
+        ))}
+        <div style={{ marginTop: 14, textAlign: "center", padding: 10, borderRadius: 10, background: C.okBg, fontSize: 14, fontWeight: 600, color: C.ok }}>You gain ₹{(d.altT - d.wrT).toLocaleString()} more per acre by year {yr}</div>
+      </div>
+    </div>
+  );
+}
+
+// =================== MAP (with crop toggle) ===================
+function MapScr() {
+  const all = Object.entries(CROPS).map(([k, v]) => ({ key: k, ...v })).sort((a, b) => b.score - a.score);
+  const [sel, setSel] = useState("chickpea");
+  const sc = CROPS[sel];
+  // Simulated map colours based on selected crop's suitability
+  const mapGrad = sc.score >= 75
+    ? "linear-gradient(135deg, #C5D99E, #A3C476 30%, #8AB85A 60%, #6DA63E 80%, #78B04A)"
+    : sc.score >= 55
+    ? "linear-gradient(135deg, #E8D48B, #C5C476 30%, #B8A85A 60%, #A89E3E 80%, #D4C46A)"
+    : "linear-gradient(135deg, #E8C48B, #D4A476 30%, #C88A5A 60%, #B87030 80%, #D49860)";
+
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <h2 className="sf" style={{ fontSize: 24, color: C.earth, marginBottom: 4 }}>Kaunsi fasal aapki zameen ke liye?</h2>
+      <p style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>Tap a crop to see how it fits your land (GAEZ + Soil Health Card)</p>
+
+      {/* Crop toggle pills */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+        {all.map(cr => (
+          <button key={cr.key} onClick={() => setSel(cr.key)} style={{ padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: sel === cr.key ? 700 : 500, border: sel === cr.key ? `2px solid ${C.earth}` : `1.5px solid ${C.border}`, background: sel === cr.key ? C.earthPale : C.card, color: sel === cr.key ? C.earth : C.muted, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
+            {cr.name.split(" (")[0]}
+          </button>
+        ))}
+      </div>
+
+      {/* Map changes based on selection */}
+      <div key={sel} className="af" style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 170, marginBottom: 6, background: mapGrad, border: `1px solid ${C.border}` }}>
+        <div style={{ position: "absolute", inset: 0, background: sc.score >= 75 ? "radial-gradient(circle at 45% 55%, rgba(22,128,60,.35) 0%, transparent 45%)" : sc.score >= 55 ? "radial-gradient(circle at 45% 55%, rgba(200,149,46,.25) 0%, transparent 45%)" : "radial-gradient(circle at 45% 55%, rgba(192,86,33,.25) 0%, transparent 45%)" }} />
+        <div style={{ position: "absolute", top: 12, left: 12, padding: "5px 10px", borderRadius: 6, background: "rgba(0,0,0,.55)", color: "#fff", fontSize: 11 }}>GAEZ v4 · {sc.name.split(" (")[0]} · Irrigated</div>
+        <div style={{ position: "absolute", top: "48%", left: "44%", width: 14, height: 14, borderRadius: 7, background: "#fff", border: `3px solid ${C.earth}`, boxShadow: "0 0 0 4px rgba(45,80,22,.2)" }} />
+        <div style={{ position: "absolute", top: "38%", left: "49%", fontSize: 11, fontWeight: 600, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.5)" }}>Your farm</div>
+        {/* Score overlay */}
+        <div style={{ position: "absolute", bottom: 12, left: 12, padding: "8px 14px", borderRadius: 10, background: "rgba(0,0,0,.6)", color: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="sf" style={{ fontSize: 24 }}>{sc.score}</div>
+          <div><div style={{ fontSize: 12, fontWeight: 600 }}>{sc.fit}</div><div style={{ fontSize: 10, opacity: .7 }}>Yield: {adjYield(sc)} of {sc.maxYield} qtl/acre possible</div></div>
+        </div>
+        <div style={{ position: "absolute", bottom: 8, right: 10, display: "flex", gap: 5 }}>
+          {[{ c: "#2D7A2D", l: "Great" }, { c: "#6DA63E", l: "Good" }, { c: "#C8952E", l: "OK" }, { c: "#C05621", l: "Hard" }].map(({ c, l }) => (
+            <div key={l} style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 4, background: "rgba(0,0,0,.45)", fontSize: 9, color: "#fff" }}><div style={{ width: 7, height: 7, borderRadius: 2, background: c }} />{l}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Yield impact explanation */}
+      <div style={{ padding: "10px 14px", borderRadius: 10, background: sc.score >= 75 ? C.okBg : sc.score >= 55 ? C.goldLight : C.dangerBg, marginBottom: 16, fontSize: 12, color: sc.score >= 75 ? C.ok : sc.score >= 55 ? "#8B5A1B" : C.danger, lineHeight: 1.6 }}>
+        <strong>What this means for yield:</strong> {sc.name.split(" (")[0]} can produce up to {sc.maxYield} qtl/acre in ideal soil. Your soil scores {sc.score}/100, so expect about <strong>{adjYield(sc)} qtl/acre</strong>. {sc.score >= 75 ? "That's excellent — close to maximum." : sc.score >= 55 ? "Decent yield, but not at full potential." : "Low yield expected — consider better-suited crops."}
+      </div>
+
+      {/* Sorted list */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>All crops ranked for your land</div>
+      {all.map((cr, i) => (
+        <div key={i} onClick={() => setSel(cr.key)} className="as" style={{ animationDelay: `${i * .04}s`, display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: sel === cr.key ? C.earthPale : C.card, border: `1px solid ${sel === cr.key ? C.earth : C.border}`, marginBottom: 6, cursor: "pointer", transition: "all .15s" }}>
+          <div style={{ width: 38, textAlign: "center" }}>
+            <div className="sf" style={{ fontSize: 18, color: cr.color }}>{cr.score}</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{cr.name}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>{cr.fit} · {cr.season} · Yield: {adjYield(cr)}/{cr.maxYield} qtl</div>
+          </div>
+          <div style={{ width: 50, height: 5, borderRadius: 3, background: C.border, flexShrink: 0 }}>
+            <div style={{ width: `${cr.score}%`, height: "100%", borderRadius: 3, background: cr.color }} />
+          </div>
+        </div>
+      ))}
+      <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 10, background: C.blueBg, fontSize: 12, color: C.blue }}>
+        <strong>Climate warning:</strong> Rice will become 18% harder to grow here by 2050. Chickpea gets 12% better.
+      </div>
+    </div>
+  );
+}
+
+// =================== PRICES ===================
+function Prices() {
+  const ref = useRef(null);
+  const crops = [
+    { name: "Wheat", swing: 1, msp: "High" }, { name: "Rice", swing: 1, msp: "High" },
+    { name: "Chickpea", swing: 2, msp: "Low" }, { name: "Mustard", swing: 2, msp: "Medium" },
+    { name: "Maize", swing: 1, msp: "Medium" }, { name: "Mung bean", swing: 3, msp: "Low" },
+  ];
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext("2d");
+    const w = cv.width = cv.offsetWidth * 2, h = cv.height = cv.offsetHeight * 2;
+    ctx.scale(2, 2); const cw = w / 2, ch = h / 2;
+    const ms = ["O", "N", "D", "J", "F", "M", "A", "M", "J"];
+    const mid = [4800, 4900, 5100, 5300, 5500, 5200, 4900, 4700, 4600];
+    const hi = [5600, 5800, 6200, 6500, 6800, 6400, 5900, 5500, 5400];
+    const lo = [4100, 4200, 4300, 4400, 4500, 4200, 4000, 3900, 3800];
+    const px = i => 40 + (i / 8) * (cw - 60), py = v => ch - 30 - ((v - 3500) / 3500) * (ch - 50);
+    ctx.beginPath(); for (let i = 0; i < 9; i++) ctx.lineTo(px(i), py(hi[i]));
+    for (let i = 8; i >= 0; i--) ctx.lineTo(px(i), py(lo[i]));
+    ctx.closePath(); ctx.fillStyle = "rgba(200,149,46,.12)"; ctx.fill();
+    ctx.beginPath(); for (let i = 0; i < 9; i++) { i ? ctx.lineTo(px(i), py(mid[i])) : ctx.moveTo(px(i), py(mid[i])); }
+    ctx.strokeStyle = C.gold; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.font = "11px DM Sans,sans-serif"; ctx.textAlign = "center";
+    ms.forEach((m, i) => ctx.fillText(m, px(i), ch - 10));
+    ctx.textAlign = "right";
+    [4000, 5000, 6000, 7000].forEach(v => { ctx.fillText("₹" + (v / 1000) + "k", 34, py(v) + 4); ctx.strokeStyle = "rgba(0,0,0,.05)"; ctx.lineWidth = .5; ctx.beginPath(); ctx.moveTo(40, py(v)); ctx.lineTo(cw - 20, py(v)); ctx.stroke(); });
+    ctx.fillStyle = C.gold; ctx.textAlign = "left"; ctx.font = "bold 12px DM Sans,sans-serif";
+    ctx.fillText("Chickpea mandi price (₹/quintal)", 40, 18);
+    ctx.font = "11px DM Sans,sans-serif"; ctx.fillStyle = C.muted;
+    ctx.fillText("Shaded area = price range over 5 years", 40, 34);
+  }, []);
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <h2 className="sf" style={{ fontSize: 24, color: C.earth, marginBottom: 4 }}>Kya daam pakka milega?</h2>
+      <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>5-year mandi price history from Agmarknet</p>
+      <div style={{ borderRadius: 14, background: C.card, border: `1px solid ${C.border}`, padding: 12, marginBottom: 20 }}><canvas ref={ref} style={{ width: "100%", height: 200 }} /></div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>Price safety of each crop</div>
+      {crops.map((c, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: i % 2 === 0 ? C.warm : C.card, border: `1px solid ${C.border}`, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80 }}>{c.name}</span>
+          <SwingDots level={c.swing} />
+          <MspBadge level={c.msp} />
+        </div>
+      ))}
+      <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: C.earthPale, fontSize: 13, color: C.earth, lineHeight: 1.6 }}>
+        <strong>Don't worry about ups and downs:</strong> Chickpea prices move more than wheat, but earn 2.4× more. Even in the worst year, you earn more per acre.
+      </div>
+    </div>
+  );
+}
+
+// =================== BUILDER (sorted by suitability, with warnings) ===================
+function Builder({ rabi, kharif, setRabi, setKharif, onGo }) {
+  const rList = Object.entries(CROPS).filter(([, v]) => v.season === "rabi").sort(([, a], [, b]) => b.score - a.score);
+  const kList = Object.entries(CROPS).filter(([, v]) => v.season === "kharif").sort(([, a], [, b]) => b.score - a.score);
+
+  const Opt = ({ ck, cr, sel, pick }) => {
+    const on = sel === ck;
+    const low = cr.score < 50;
+    const ay = adjYield(cr);
+    return (
+      <button onClick={() => pick(ck)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 16px", borderRadius: 14, border: on ? `2px solid ${C.earth}` : low ? `1.5px dashed ${C.danger}` : `1.5px solid ${C.border}`, background: on ? C.earthPale : low ? "#FFF9F5" : C.card, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all .2s", boxShadow: on ? "0 0 0 3px rgba(45,80,22,.1)" : "none", opacity: low && !on ? .85 : 1 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 21, background: on ? C.earth : `${cr.color}18`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span className="sf" style={{ fontSize: 16, color: on ? "#fff" : cr.color, lineHeight: 1 }}>{cr.score}</span>
+          <span style={{ fontSize: 8, color: on ? "rgba(255,255,255,.7)" : C.muted }}>fit</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: on ? C.earth : C.ink }}>{cr.name}</span>
+            {low && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 6, background: C.dangerBg, color: C.danger, fontWeight: 700 }}>Risky</span>}
+          </div>
+          <div style={{ fontSize: 12, color: on ? C.earthLight : C.muted, marginTop: 2 }}>
+            Yield: <strong>{ay}</strong>/{cr.maxYield} qtl · ₹{cr.price.toLocaleString()}/qtl
+          </div>
+          <div style={{ marginTop: 3 }}><SwingDots level={cr.priceSwing} /></div>
+        </div>
+        <div style={{ width: 24, height: 24, borderRadius: 12, border: on ? `2px solid ${C.earth}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {on && <div style={{ width: 12, height: 12, borderRadius: 6, background: C.earth }} />}
+        </div>
+      </button>
+    );
+  };
+
+  const ok = rabi && kharif;
+  const pv = ok ? calc(rabi, kharif, 1) : null;
+  const lowWarn = ok && (CROPS[rabi].score < 50 || CROPS[kharif].score < 50);
+
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: C.gold, fontWeight: 600, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>Ab aapki baari</div>
+        <h2 className="sf" style={{ fontSize: 26, color: C.earth, lineHeight: 1.2 }}>Apna rotation chunein</h2>
+        <p style={{ fontSize: 14, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>Crops are ranked by how well they fit your soil. Yield shown is adjusted to your land — not the maximum possible.</p>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{ padding: "4px 12px", borderRadius: 8, background: "#E0ECFF", fontSize: 11, fontWeight: 700, color: "#2956A8", textTransform: "uppercase", letterSpacing: 1 }}>Rabi</div>
+          <span style={{ fontSize: 13, color: C.muted }}>Winter (Oct – Mar) · best fit first</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{rList.map(([k, v]) => <Opt key={k} ck={k} cr={v} sel={rabi} pick={setRabi} />)}</div>
+      </div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{ padding: "4px 12px", borderRadius: 8, background: "#FFECD6", fontSize: 11, fontWeight: 700, color: "#8B5A1B", textTransform: "uppercase", letterSpacing: 1 }}>Kharif</div>
+          <span style={{ fontSize: 13, color: C.muted }}>Monsoon (Jun – Oct) · best fit first</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{kList.map(([k, v]) => <Opt key={k} ck={k} cr={v} sel={kharif} pick={setKharif} />)}</div>
+      </div>
+
+      {lowWarn && <div className="ap" style={{ padding: "12px 14px", borderRadius: 10, background: C.dangerBg, border: `1px solid rgba(192,86,33,.2)`, fontSize: 13, color: C.danger, marginBottom: 16, lineHeight: 1.5 }}>
+        ⚠ One of your crops has low suitability (below 50%) for your soil. This means lower yield and higher risk. The economics below reflect this — consider switching to a better-fit crop.
+      </div>}
+
+      {ok && (
+        <div className="ap" style={{ padding: 18, borderRadius: 16, background: `linear-gradient(135deg, ${C.earth}, ${C.earthLight})`, color: "#fff", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5, opacity: .65, marginBottom: 10 }}>Quick look · Year 1 · Suitability-adjusted</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 13, opacity: .8 }}>{CROPS[rabi].name.split(" (")[0]} + {CROPS[kharif].name.split(" (")[0]}</div>
+              <div className="sf" style={{ fontSize: 30, marginTop: 2 }}>₹{pv.net.toLocaleString()}</div>
+              <div style={{ fontSize: 12, opacity: .65 }}>/acre/year (full picture)</div>
+            </div>
+            <div style={{ textAlign: "center", padding: "8px 14px", borderRadius: 10, background: pv.net > BASE.trueNet ? "rgba(255,255,255,.18)" : "rgba(255,100,100,.2)" }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{pv.net > BASE.trueNet ? "+" : ""}₹{(pv.net - BASE.trueNet).toLocaleString()}</div>
+              <div style={{ fontSize: 10, opacity: .7 }}>vs wheat-rice</div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+            {[{ l: "💧 Water saved", v: CROPS[rabi].water + CROPS[kharif].water }, { l: "🌱 Soil benefit", v: CROPS[rabi].nfix + CROPS[kharif].nfix + CROPS[rabi].soil + CROPS[kharif].soil }, { l: "⬇ Less fertilizer", v: CROPS[rabi].fert + CROPS[kharif].fert }].map((x, i) => (
+              <div key={i} style={{ padding: "8px 6px", borderRadius: 8, background: "rgba(255,255,255,.1)", textAlign: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>₹{x.v.toLocaleString()}</div>
+                <div style={{ fontSize: 10, opacity: .65, marginTop: 2 }}>{x.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <button onClick={onGo} disabled={!ok} style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", background: ok ? C.earth : C.border, color: "#fff", fontSize: 15, fontWeight: 600, cursor: ok ? "pointer" : "default", fontFamily: "inherit", opacity: ok ? 1 : .5 }}>
+        {ok ? "Poora hisaab dekhein (5-year) →" : "Choose one rabi + one kharif crop above"}
+      </button>
+    </div>
+  );
+}
+
+// =================== MY PLAN (suitability-adjusted) ===================
+function MyPlan({ rabi, kharif }) {
+  const [yr, setYr] = useState(1);
+  if (!rabi || !kharif) return <div style={{ padding: 40, textAlign: "center", color: C.muted }}>Pehle apna rotation chunein.</div>;
+  const rc = CROPS[rabi], kc = CROPS[kharif];
+  const nm = `${rc.name.split(" (")[0]} + ${kc.name.split(" (")[0]}`;
+  const e = calc(rabi, kharif, yr);
+  const bt = BASE.trueNet - (yr - 1) * 350;
+  const mx = Math.max(e.net, bt) * 1.15;
+  const bar = (v, c) => ({ width: `${Math.max(0, (v / mx) * 100)}%`, height: 20, borderRadius: 5, background: c, transition: "width .4s" });
+  const diff = e.net - bt;
+
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: C.gold, fontWeight: 600, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>Aapka plan</div>
+        <h2 className="sf" style={{ fontSize: 24, color: C.earth, lineHeight: 1.2 }}>{nm}</h2>
+        <p style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>All yields adjusted to your soil's suitability score</p>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {[1, 2, 3, 5].map(y => <button key={y} onClick={() => setYr(y)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `1.5px solid ${y === yr ? C.earth : C.border}`, background: y === yr ? C.earthPale : "transparent", color: y === yr ? C.earth : C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Year {y}</button>)}
+      </div>
+
+      {/* Suitability-adjusted yield cards */}
+      <div className="au" style={{ padding: 16, borderRadius: 14, background: C.card, border: `1px solid ${C.border}`, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 14 }}>Season-wise earnings (yield adjusted to your soil)</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          <div style={{ padding: 12, borderRadius: 10, background: "#E0ECFF" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: "#2956A8", textTransform: "uppercase" }}>Rabi · {rc.name.split(" (")[0]}</div>
+              <SuitBadge score={rc.score} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#1D3F7A", marginTop: 6 }}>₹{e.rRev.toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: "#4A6FA8", marginTop: 2 }}>Yield: {e.rY} qtl/acre</div>
+            <div style={{ fontSize: 10, color: "#7A9CC8", marginTop: 1 }}>Max possible: {rc.maxYield} qtl · Cost: ₹{e.rIn.toLocaleString()}</div>
+          </div>
+          <div style={{ padding: 12, borderRadius: 10, background: "#FFECD6" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: "#8B5A1B", textTransform: "uppercase" }}>Kharif · {kc.name.split(" (")[0]}</div>
+              <SuitBadge score={kc.score} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#6B3F0E", marginTop: 6 }}>₹{e.kRev.toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: "#8B6A3D", marginTop: 2 }}>Yield: {e.kY} qtl/acre</div>
+            <div style={{ fontSize: 10, color: "#A8885D", marginTop: 1 }}>Max possible: {kc.maxYield} qtl · Cost: ₹{e.kIn.toLocaleString()}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderRadius: 8, background: C.warm }}>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Profit (without hidden benefits)</span>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>₹{e.conv.toLocaleString()}/acre</span>
+        </div>
+      </div>
+
+      {/* Benefits */}
+      <div className="au" style={{ animationDelay: ".1s", padding: 16, borderRadius: 14, background: C.okBg, border: `1px solid rgba(22,128,60,.12)`, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.ok, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>Bonus benefits (year {yr}){yr > 1 ? " — badhtey jaayenge" : ""}</div>
+        {[
+          { l: "💧 Water you save", v: CROPS[rabi].water + CROPS[kharif].water },
+          { l: "🌱 Free fertilizer from legumes", v: CROPS[rabi].nfix + CROPS[kharif].nfix },
+          { l: "🪱 Soil gets healthier", v: CROPS[rabi].soil + CROPS[kharif].soil },
+          { l: "⬇ Less urea/DAP needed", v: CROPS[rabi].fert + CROPS[kharif].fert },
+        ].filter(x => x.v > 0).map((x, i) => {
+          const s = Math.round(x.v * (1 + (yr - 1) * .12));
+          return (<div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid rgba(22,128,60,.06)` }}><span style={{ fontSize: 13 }}>{x.l}</span><span style={{ fontSize: 13, fontWeight: 600, color: C.ok }}>+₹{s.toLocaleString()}</span></div>);
+        })}
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, padding: "10px 12px", borderRadius: 8, background: "rgba(22,128,60,.08)" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: C.ok }}>Total bonus</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.ok }}>+₹{e.ben.toLocaleString()}/acre</span>
+        </div>
+      </div>
+
+      {/* Comparison */}
+      <div style={{ padding: 18, borderRadius: 14, background: C.card, border: `2px solid ${C.earth}`, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.earth, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 14 }}>Side-by-side · Year {yr}</div>
+        {[["Wheat + Rice (real cost)", bt, C.danger], [nm + " (real value)", e.net, C.ok]].map(([l, v, c]) => (
+          <div key={l} style={{ marginBottom: 10 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>{l}</span><span style={{ fontWeight: 600, color: c }}>₹{v.toLocaleString()}</span></div><div style={bar(v, c)} /></div>
+        ))}
+        <div style={{ marginTop: 14, textAlign: "center", padding: 12, borderRadius: 10, background: diff > 0 ? C.okBg : C.dangerBg }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: diff > 0 ? C.ok : C.danger }}>{diff > 0 ? "+" : ""}₹{diff.toLocaleString()}/acre/year</div>
+          <div style={{ fontSize: 12, color: diff > 0 ? C.ok : C.danger, opacity: .7, marginTop: 2 }}>{diff > 0 ? `Aapka plan ${yr === 1 ? "pehle saal se" : "year " + yr + " tak"} zyada kamata hai` : "Zyada upyukt fasal chunein — soil fit matters!"}</div>
+        </div>
+      </div>
+
+      <div className="au" style={{ animationDelay: ".2s", padding: 16, borderRadius: 14, background: C.goldLight, border: `1px solid rgba(200,149,46,.2)` }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Poore 5 acre pe (year {yr})</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+          <div><div style={{ fontSize: 12, color: "#8B6A3D" }}>Wheat-rice (asli)</div><div style={{ fontSize: 20, fontWeight: 700, color: "#6B3F0E" }}>₹{(bt * 5).toLocaleString()}</div></div>
+          <div><div style={{ fontSize: 12, color: "#8B6A3D" }}>Aapka plan (asli)</div><div style={{ fontSize: 20, fontWeight: 700, color: C.earth }}>₹{(e.net * 5).toLocaleString()}</div></div>
+        </div>
+        {diff > 0 && <div style={{ marginTop: 10, fontSize: 15, fontWeight: 600, color: C.earth }}>₹{(diff * 5).toLocaleString()} zyada — poori zameen pe!</div>}
+      </div>
+    </div>
+  );
+}
+
+// =================== DATA ===================
+function Data() {
+  const s = [
+    { name: "GAEZ v4 (FAO)", type: "Which crop fits where + yield potential", st: "open" },
+    { name: "Agmarknet / data.gov.in", type: "Daily mandi prices", st: "open" },
+    { name: "CEDA (Ashoka Univ.)", type: "5-year price history", st: "open" },
+    { name: "Soil Health Card", type: "Your soil report (adjusts yield)", st: "semi" },
+    { name: "CACP / DES", type: "Input costs by crop", st: "open" },
+    { name: "AgriStack", type: "Farmer ID + land records", st: "open" },
+    { name: "ICAR / KVK", type: "Local crop trial results", st: "partner" },
+  ];
+  return (
+    <div style={{ padding: "24px 20px" }}>
+      <h2 className="sf" style={{ fontSize: 24, color: C.earth, marginBottom: 4 }}>Where does the data come from?</h2>
+      <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>All government and scientific sources — no guesswork</p>
+      {s.map((x, i) => (
+        <div key={i} className="as" style={{ animationDelay: `${i * .04}s`, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderRadius: 12, background: C.card, border: `1px solid ${C.border}`, marginBottom: 8 }}>
+          <div><div style={{ fontSize: 14, fontWeight: 600 }}>{x.name}</div><div style={{ fontSize: 12, color: C.muted }}>{x.type}</div></div>
+          <span style={{ padding: "3px 10px", borderRadius: 10, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+            background: x.st === "open" ? C.okBg : x.st === "semi" ? C.goldLight : C.blueBg,
+            color: x.st === "open" ? C.ok : x.st === "semi" ? C.gold : C.blue }}>{x.st === "open" ? "Free" : x.st === "semi" ? "Linked" : "Partner"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =================== APP ===================
+window.__App = function App() {
+  const [scr, setScr] = useState("splash");
+  const [nav, setNav] = useState(false);
+  const [rabi, setRabi] = useState(null);
+  const [kharif, setKharif] = useState(null);
+  const ix = SCR.findIndex(s => s.id === scr);
+  return (
+    <div style={{ maxWidth: 420, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: C.warm, position: "relative", fontFamily: "'DM Sans',sans-serif" }}>
+      <style>{css}</style>
+      {scr !== "splash" && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, background: C.card, position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="sf" style={{ fontSize: 18, color: C.earth }}>Khet Vividhata</span><span style={{ fontSize: 11, color: C.muted }}>prototype</span></div>
+          <button onClick={() => setNav(!nav)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: 4, color: C.muted }}>☰</button>
+        </div>
+      )}
+      {nav && (
+        <div className="af" style={{ position: "absolute", top: 48, right: 12, zIndex: 20, background: C.card, borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: "0 8px 30px rgba(0,0,0,.1)", padding: "8px 0", minWidth: 200 }}>
+          {SCR.filter(s => s.id !== "splash").map(s => (
+            <button key={s.id} onClick={() => { setScr(s.id); setNav(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 16px", background: s.id === scr ? C.earthPale : "transparent", border: "none", fontSize: 13, color: s.id === scr ? C.earth : C.ink, fontWeight: s.id === scr ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
+              {s.id === "builder" || s.id === "myplan" ? "★ " + s.label : s.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div key={scr} className="af" style={{ flex: 1, overflow: "auto" }}>
+        {scr === "splash" && <Splash onNext={() => setScr("profile")} />}
+        {scr === "profile" && <Profile />}
+        {scr === "dash" && <Dash />}
+        {scr === "compare" && <Compare />}
+        {scr === "map" && <MapScr />}
+        {scr === "prices" && <Prices />}
+        {scr === "builder" && <Builder rabi={rabi} kharif={kharif} setRabi={setRabi} setKharif={setKharif} onGo={() => setScr("myplan")} />}
+        {scr === "myplan" && <MyPlan rabi={rabi} kharif={kharif} />}
+        {scr === "data" && <Data />}
+      </div>
+      {scr !== "splash" && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${C.border}`, background: C.card }}>
+          <button onClick={() => ix > 1 && setScr(SCR[ix - 1].id)} disabled={ix <= 1} style={{ padding: "8px 18px", borderRadius: 20, border: `1px solid ${C.border}`, background: "transparent", fontSize: 13, fontWeight: 500, cursor: ix <= 1 ? "default" : "pointer", opacity: ix <= 1 ? .3 : 1, fontFamily: "inherit", color: C.ink }}>← Back</button>
+          <div style={{ fontSize: 12, color: C.muted }}>{ix}/{SCR.length - 1}</div>
+          <button onClick={() => ix < SCR.length - 1 && setScr(SCR[ix + 1].id)} disabled={ix >= SCR.length - 1} style={{ padding: "8px 18px", borderRadius: 20, border: "none", background: ix >= SCR.length - 1 ? C.border : C.earth, color: "#fff", fontSize: 13, fontWeight: 500, cursor: ix >= SCR.length - 1 ? "default" : "pointer", fontFamily: "inherit" }}>Next →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const App = window.__App;
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
